@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mariadb-instance-service
+spec:
+  selector:
+    app: mariadb
+  type: NodePort
+  ports:
+    - protocol: TCP
+      port: 3306
+      targetPort: 3306
+      nodePort: 30031
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mariadb
+spec:
+  selector:
+    matchLabels:
+      app: mariadb
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: mariadb
+    spec:
+      containers:
+      - image: mariadb:10.4
+        name: mariadb
+        env:
+          # Use secret in real usage
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mariadb-single-secret
+              key: password
+        ports:
+        - containerPort: 3306
+          name: maridb
+        volumeMounts:
+        - name: mariadb-persistent-storage
+          mountPath: /var/lib/mysql
+      volumes:
+      - name: mariadb-persistent-storage
+        persistentVolumeClaim:
+          claimName: mariadb-single-instance-pv-claim
